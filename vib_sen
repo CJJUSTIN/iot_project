@@ -1,0 +1,56 @@
+#include <ESP8266WiFi.h>
+#include "ThingSpeak.h"
+
+char ssid[] = "Pingu";   // your network SSID (name) 
+char pass[] = "connectiot";   // your network password
+int m1;
+int m2;
+
+WiFiClient  client;
+
+unsigned long myChannelNumber = 1022071;
+const char * myWriteAPIKey = "KWH5S9UCUB705Z2B";
+
+
+int TILT=D8;
+int VIBRATION_SENSOR = D5;
+int TILT_SENSED=0;
+long measurement=0;
+
+void setup() {
+  m1=m2=0;
+  pinMode(TILT, INPUT);//define Data input pin for tilt sensor
+  pinMode(VIBRATION_SENSOR, INPUT);//define Data input pin for vibration switch
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA); 
+  ThingSpeak.begin(client);  // Initialize ThingSpeak
+}
+
+void loop() {
+
+  if(WiFi.status() != WL_CONNECTED){
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    while(WiFi.status() != WL_CONNECTED){
+      WiFi.begin(ssid, pass);  // Connect to WPA/WPA2 network. Change this line if using open or WEP network
+      Serial.print(".");
+      delay(5000);     
+    } 
+  Serial.println("\nConnected.");
+  }  
+  TILT_SENSED = digitalRead(TILT);// read TILT sensor
+  measurement =pulseIn (VIBRATION_SENSOR, HIGH);//read Vibration switch
+  Serial.println(TILT_SENSED);
+  Serial.println(measurement);
+  m1=millis();
+  if(m1-m2>15000)
+  {
+    ThingSpeak.setField(1, TILT_SENSED);
+    ThingSpeak.setField(2, measurement);
+    ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);
+    Serial.println("************************DATA SENT***************************");
+    m2=millis();
+  }
+
+  delay(200);
+}
